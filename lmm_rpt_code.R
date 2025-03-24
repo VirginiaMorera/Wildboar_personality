@@ -146,7 +146,11 @@ randomSims1 %<>%
   left_join(id_summary, by = "animalID") %>% 
   mutate(variable = "movement_rate") 
 
-
+randomSims1 <- randomSims1 %>% 
+  mutate(lower = mean-sd, 
+         higher = mean+sd, 
+         position = if_else(lower > 0, "above", 
+                            if_else(higher < 0, "below", "overlap")))
 #### 2. nocturnality (boldness proxy) ####
 
 #### 2.1 check correlation ####
@@ -163,7 +167,8 @@ hist(gps_weekly$mean_diurnality, breaks = 100)
 abline(v = median(gps_weekly$mean_diurnality), col="red", lwd=3, lty=2)
 
 gps_weekly <- gps_weekly %>% 
-  mutate(mean_diurnality_bin = if_else(mean_diurnality > -0.7262, 1, 0))
+  mutate(mean_diurnality_bin = if_else(mean_diurnality > median(gps_weekly$mean_diurnality), 1, 0))
+
 hist(gps_weekly$mean_diurnality_bin, breaks = 100)
 
 
@@ -182,6 +187,21 @@ m2 <- glmer(mean_diurnality_bin ~
             data = gps_weekly)
 
 summary(m2)
+
+# calc variance explained by year 
+
+# Extract variance components
+variance_components <- as.data.frame(VarCorr(m2))
+
+# Get the variances for each random effect
+var_ID <- variance_components[variance_components$grp == "animalID", "vcov"]
+var_year <- variance_components[variance_components$grp == "year", "vcov"]
+
+
+residual_var <- (pi^2) / 3
+
+var_expl_year <- var_year/(var_year + var_ID + residual_var)
+var_expl_year*100
 
 #### 2.3 evaluate model ####
 
@@ -202,6 +222,7 @@ model_outputs$R2c[2] <- r.squaredGLMM(m2)[2,2]
 m2_eff <- broom::tidy(m2)
 write.csv(m2_eff, file = "Outputs/single_trait_models/m2_effects.csv")
 
+m2_eff2 <- read.csv("Outputs/single_trait_models/m2_effects.csv")
 #### 2.5 calculate repeatability with same model ####
 rpt2 <- rptR::rptBinary(mean_diurnality_bin ~   
                     age_class + sex + study_areas + 
@@ -257,6 +278,12 @@ randomSims2 %<>%
   mutate(variable = "diurnality")
 
 
+randomSims2 <- randomSims2 %>% 
+  mutate(lower = mean-sd, 
+         higher = mean+sd, 
+         position = if_else(lower > 0, "above", 
+                            if_else(higher < 0, "below", "overlap")))
+
 #### 3. Intensity of use (proxy for exploration) ####
 
 #### 3.1 check correlation ####
@@ -286,6 +313,11 @@ m3 <- lmer(mean_intensity_use_trans ~  sex + age_class + study_areas +
            data = gps_weekly)
 
 summary(m3)
+
+vars <- as.data.frame(VarCorr(m3))
+
+var_year <- vars[2,4]/(vars[1,4] + vars[2,4] + vars[3,4])
+var_year*100
 
 #### 3.3 evaluate model ####
 
@@ -356,7 +388,11 @@ randomSims3 %<>%
   left_join(id_summary, by = "animalID") %>% 
   mutate(variable = "intensity_use")
 
-# fe <- fixef(m3)
+randomSims3 <- randomSims3 %>% 
+  mutate(lower = mean-sd, 
+         higher = mean+sd, 
+         position = if_else(lower > 0, "above", 
+                            if_else(higher < 0, "below", "overlap")))# fe <- fixef(m3)
 # 
 # randomSims3 <- randomSims3 %>% 
 #   mutate(
