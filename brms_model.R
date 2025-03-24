@@ -49,6 +49,7 @@ gps_weekly %<>%
   mutate(mean_diurnality_bin = if_else(mean_diurnality > -0.7262, 1, 0), 
          mean_intensity_use_trans = log(mean_intensity_use+1))
 
+
 # set up cores for brms model
 my.cores <- detectCores()-2
 
