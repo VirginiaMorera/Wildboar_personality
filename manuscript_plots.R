@@ -25,13 +25,13 @@ eur <- eur %>%
 
 map2 <- ggplot(cz) + 
   geom_sf(fill = "gray80", alpha = 0.5) + 
-  geom_sf(data = gps_locs, aes(col = study_areas), size = 0.5) + 
+  geom_sf(data = gps_data_clean, aes(col = study_areas), size = 0.5) + 
   labs(col = "Study area") +
   theme_bw() + 
   guides(color = guide_legend(override.aes = list(size = 3)))
 
 
-png("map.png", width = 10, height = 10, units = "in", res = 1200)
+png("map.png", width = 9, height = 9, units = "in", res = 1000)
 print(map1)
 dev.off()
 
@@ -54,10 +54,17 @@ for_hist <- for_hist_w %>%
                            mean_intensity_use = "Intensity of use"), 
          Variable = factor(Variable, levels = c("Movement rate", "Intensity of use", "Diurnality")))
 
-for_hist_med <- for_hist %>% 
+for_hist_mean <- for_hist %>% 
   group_by(Variable) %>% 
   summarise(mean = mean(value), 
             sd = sd(value))
+
+for_hist_med <- for_hist %>% 
+  group_by(Variable) %>% 
+  summarise(med = quantile(value, 0.5), 
+            sd = sd(value))
+
+for_hist_med$med[1:2] <- NA
 
 hist <- ggplot(for_hist) + 
   geom_histogram(aes(x = value, fill = Variable), bins = 25) + 
@@ -69,7 +76,7 @@ hist <- ggplot(for_hist) +
   theme(legend.position="bottom")
 
 
-pdf("var_hists.pdf", width = 16*0.5, height = 10*0.5)
+png("MS_figures/Figure_2.png", width = 177, height = 177/2, units = "mm", res = 600)
 print(hist)
 dev.off()
 
@@ -77,52 +84,63 @@ dev.off()
 ## Figure 3 ####
 
 # lmm random effect plots
+randomSims1 <- randomSims1 %>% 
+  mutate(Variable = "Movement rate")
+randomSims2 <- randomSims2 %>% 
+  mutate(Variable = "Diurnality")
+randomSims3 <- randomSims3 %>% 
+  mutate(Variable = "Intensity of use")
+
+randomSims <- bind_rows(randomSims1, randomSims2, randomSims3)
 
 p1 <- ggplot(randomSims1, aes(x = reorder(animalID, mean))) +
   geom_errorbar(aes(ymin = mean-sd,
                     ymax = mean+sd)) +
-  geom_point(aes(y = mean, col = mean), size = 2) +
-  scale_color_viridis_c(option = "D") +
+  geom_point(aes(y = mean, col = age_class), size = 2) +
+  # scale_color_viridis_c(option = "D") +
   geom_hline(aes(yintercept = median(mean))) + 
-  labs(y = "Movement rate random effect", col = "Mean effect") + 
+  labs(y = "Random effect size", col = "Age class", title = "a) Movement rate") + 
   theme_bw()+
   theme(
-    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.text.x = element_blank(),
     # axis.text.x = element_blank(),
     axis.title.x = element_blank()
-  )
+  ) 
 
 p2 <- ggplot(randomSims2, aes(x = reorder(animalID, mean))) +
   geom_errorbar(aes(ymin = mean-sd,
                     ymax = mean+sd)) +
-  geom_point(aes(y = mean, col = mean), size = 2) +
-  scale_color_viridis_c(option = "D") +
+  geom_point(aes(y = mean, col = age_class), size = 2) +
+  # scale_color_viridis_c(option = "D") +
   geom_hline(aes(yintercept = median(mean))) + 
-  labs(y = "Intensity of use rndom effect", col = "Mean effect") + 
+  labs(y = "Random effect size", col = "Age class", title = "c) Diurnality") + 
   theme_bw()+
   theme(
-    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.text.x = element_blank(),
     # axis.text.x = element_blank(),
     axis.title.x = element_blank()
-  )
-
+  ) 
 
 p3<- ggplot(randomSims3, aes(x = reorder(animalID, mean))) +
   geom_errorbar(aes(ymin = mean-sd,
                     ymax = mean+sd)) +
-  geom_point(aes(y = mean, col = mean), size = 2) +
-  scale_color_viridis_c(option = "D") +
+  geom_point(aes(y = mean, col = age_class), size = 2) +
+  # scale_color_viridis_c(option = "D") +
   geom_hline(aes(yintercept = median(mean))) + 
-  labs(y = "Diurnality random effect", col = "Mean effect") + 
+  labs(y = "Random effect size", col = "Age class", title = "b) Intensity of use") + 
   theme_bw()+
   theme(
-    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.text.x = element_blank(),
     # axis.text.x = element_blank(),
     axis.title.x = element_blank()
-  )
+  ) 
 
-pdf("Outputs/randomEffects.pdf", width = 13, height = 9)
+pdf("MS_Figures/Figure_3.pdf", width = 12, height = 7)
 gridExtra::grid.arrange(p1, p2, p3, nrow = 3)
+dev.off()
+
+png("MS_Figures/Figure_S12.png", width = 177*1.5, height = 177, units = "mm", res = 1200)
+gridExtra::grid.arrange(p1, p3, p2, nrow = 3)
 dev.off()
 
 ## Figure 4 ####
@@ -217,7 +235,11 @@ cplot <- ggplot(all_corr_posteriors) +
   theme_bw() + 
   labs(x = "Posterior sample", y = "Density")
 
-pdf("Outputs/corr_posteriors.pdf", height = 6, width = 10)
+pdf("MS_Figures/Figure_4.pdf", height = 4, width = 8)
+print(cplot)
+dev.off()
+
+png("MS_Figures/Figure_4.png", width = 177, height = 177*0.7, units = "mm", res = 1200)
 print(cplot)
 dev.off()
 
@@ -229,12 +251,17 @@ dev.off()
 
 # animal metadata
 animals <- gps_weekly %>% 
+  separate(uniqueID, 
+           into = c(NA, "animalID", NA, NA), 
+           remove = FALSE) %>% 
   ungroup() %>% 
   dplyr::select(animalID, sex, age_class, study_areas) %>% 
   distinct()
 
 
 # merge with BLUPs dataset
+BLUP <-  read.csv("Outputs/BLUP_FINAL.csv")
+
 BLUP3 <- BLUP %>%
   # dplyr::select(animalID, diurnality, intensity_use, movement_rate) %>%
   mutate(animalID = as.character(animalID)) %>% 
@@ -292,13 +319,15 @@ BLUP3 <- BLUP %>%
     # facet_wrap(~death) + 
     labs(x = "Intensity of use (scaled)", 
          y = "Diurnality (scaled)", 
-         col = "Movement rate (scaled)"))
+         col = "Mvmnt rate (scaled)"))
 
-pdf("Outputs/BLUPS.pdf", width = 16*0.8, height = 10*0.8)
-cowplot::plot_grid(p1, p2, p3, ncol = 2)
+pdf("MS_Figures/Figure_5.pdf", width = 14*0.8, height = 8*0.8)
+cowplot::plot_grid(p1, p2, p3, ncol = 2, labels = c("a", "b", "c"))
 dev.off()
 
-
+png("MS_Figures/Figure_5.png", width = 250, height = 175, units = "mm", res = 1200)
+cowplot::plot_grid(p1, p2, p3, ncol = 2, labels = c("a", "b", "c"))
+dev.off()
 
 ## Figure S1 ####
 
@@ -460,6 +489,104 @@ p3<- ggplot(randomSims3, aes(x = reorder(animalID, mean))) +
   )
 
 pdf("Outputs/randomEffects_areas.pdf", width = 13, height = 9)
+gridExtra::grid.arrange(p1, p2, p3, nrow = 3)
+dev.off()
+
+# random effects with sex 
+
+p1 <- ggplot(randomSims1, aes(x = reorder(animalID, mean))) +
+  geom_errorbar(aes(ymin = mean-sd,
+                    ymax = mean+sd)) +
+  geom_point(aes(y = mean, col = sex), size = 2) +
+  # scale_color_viridis_c(option = "D") +
+  geom_hline(aes(yintercept = median(mean))) + 
+  labs(y = "Movement rate random effect", col = "Sex") + 
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    # axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+p2 <- ggplot(randomSims2, aes(x = reorder(animalID, mean))) +
+  geom_errorbar(aes(ymin = mean-sd,
+                    ymax = mean+sd)) +
+  geom_point(aes(y = mean, col = sex), size = 2) +
+  # scale_color_viridis_c(option = "D") +
+  geom_hline(aes(yintercept = median(mean))) + 
+  labs(y = "Intensity of use rndom effect", col = "Sex") + 
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    # axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+
+p3<- ggplot(randomSims3, aes(x = reorder(animalID, mean))) +
+  geom_errorbar(aes(ymin = mean-sd,
+                    ymax = mean+sd)) +
+  geom_point(aes(y = mean, col = sex), size = 2) +
+  # scale_color_viridis_c(option = "D") +
+  geom_hline(aes(yintercept = median(mean))) + 
+  labs(y = "Diurnality random effect", col = "Sex") + 
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    # axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+pdf("Outputs/randomEffects_sex.pdf", width = 13, height = 9)
+gridExtra::grid.arrange(p1, p2, p3, nrow = 3)
+dev.off()
+
+# random effects with age group 
+
+p1 <- ggplot(randomSims1, aes(x = reorder(animalID, mean))) +
+  geom_errorbar(aes(ymin = mean-sd,
+                    ymax = mean+sd)) +
+  geom_point(aes(y = mean, col = age_class), size = 2) +
+  # scale_color_viridis_c(option = "D") +
+  geom_hline(aes(yintercept = median(mean))) + 
+  labs(y = "Movement rate random effect", col = "Age class") + 
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    # axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+p2 <- ggplot(randomSims2, aes(x = reorder(animalID, mean))) +
+  geom_errorbar(aes(ymin = mean-sd,
+                    ymax = mean+sd)) +
+  geom_point(aes(y = mean, col = age_class), size = 2) +
+  # scale_color_viridis_c(option = "D") +
+  geom_hline(aes(yintercept = median(mean))) + 
+  labs(y = "Intensity of use rndom effect", col = "Age class") + 
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    # axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+
+p3<- ggplot(randomSims3, aes(x = reorder(animalID, mean))) +
+  geom_errorbar(aes(ymin = mean-sd,
+                    ymax = mean+sd)) +
+  geom_point(aes(y = mean, col = age_class), size = 2) +
+  # scale_color_viridis_c(option = "D") +
+  geom_hline(aes(yintercept = median(mean))) + 
+  labs(y = "Diurnality random effect", col = "Age class") + 
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    # axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+pdf("Outputs/randomEffects_age.pdf", width = 13, height = 9)
 gridExtra::grid.arrange(p1, p2, p3, nrow = 3)
 dev.off()
 
@@ -635,4 +762,93 @@ gridExtra::grid.arrange(dl1, dl2, dl3,
                         w1, w2, w3, nrow = 3)
 dev.off()
 
+## dataset ####
 
+gps_weekly_for_pub <- gps_weekly %>% 
+  separate(uniqueID, 
+           into = c(NA, "animalID", NA, NA), 
+           remove = FALSE) %>% 
+  dplyr::select(study_areas, sex, year, age_class, uniqueID, animalID, week, mean_p2ptime, 
+         mean_forestCover, mean_hfi, mean_distRoads, mean_distPaths, mean_tri, 
+         mean_dayLength, mean_mvmntrate, mean_intensity_use, mean_diurnality)
+  
+write.csv(gps_weekly_for_pub, file = "wildboar_personality_dataset.csv", row.names = F)
+
+### summary ####
+
+summary <- gps_weekly_for_pub %>% 
+  group_by(animalID) %>% 
+  summarise(n_years = n_distinct(year))
+
+## response to reviewers 1 ####
+
+(r1 <- ggplot(BLUP3,
+              aes(y = intensity_use, x = movement_rate)) + 
+   geom_point(aes(col = sex), size = 2) +
+   # geom_point() +
+   scale_colour_viridis_d() +
+   stat_smooth(method = "lm",
+               formula = y ~ x,
+               geom = "smooth") +
+   theme_bw() + 
+   # facet_wrap(~death) + 
+   labs(y = "Intensity of use (scaled)", 
+        x = "Movement rate (scaled)", 
+        col = "Sex") + 
+   NULL)
+
+(r2 <- ggplot(BLUP3,
+              aes(y = intensity_use, x = movement_rate)) + 
+    geom_point(aes(col = age_class), size = 2) +
+    # geom_point() +
+    scale_colour_viridis_d() +
+    stat_smooth(method = "lm",
+                formula = y ~ x,
+                geom = "smooth") +
+    theme_bw() + 
+    # facet_wrap(~death) + 
+    labs(y = "Intensity of use (scaled)", 
+         x = "Movement rate (scaled)", 
+         col = "Age") + 
+    NULL)
+
+(r1 <- ggplot(BLUP3,
+              aes(y = intensity_use, x = movement_rate)) + 
+    geom_point(aes(col = study_areas), size = 2) +
+    # geom_point() +
+    scale_colour_viridis_d() +
+    stat_smooth(method = "lm",
+                formula = y ~ x,
+                geom = "smooth") +
+    theme_bw() + 
+    # facet_wrap(~death) + 
+    labs(y = "Intensity of use (scaled)", 
+         x = "Movement rate (scaled)", 
+         col = "Study area") + 
+    NULL)
+
+
+## response to reviewers 2 ####
+
+gps_all <- readRDS("Data/gps_data_clean_with_act_and_TOD.RDS")
+
+tracking_length <- gps_all  %>% 
+  st_drop_geometry() %>% 
+  group_by(id) %>% 
+  summarise(
+    start_date = min(date_time), 
+    end_date = max(date_time), 
+    diff_lubridate = interval(start_date, end_date)) %>% 
+  mutate(
+    diff_days = diff_lubridate %/% days(1), 
+    diff_months = diff_lubridate %/% months(1), 
+    diff_years = diff_lubridate %/% years(1)
+  ) %>% 
+  filter(diff_days > 21)
+
+(hist <- ggplot(tracking_length) + 
+  geom_histogram(aes(x = diff_months), fill = "lightgray", col = "black", bins = 30) + 
+  scale_x_continuous(breaks = c(0, 12, 24, 36)) +
+  labs(x = "Months of tracking", y = "Frequency") + 
+  theme_bw() + 
+  theme(legend.position="bottom"))
